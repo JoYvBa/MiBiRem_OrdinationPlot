@@ -12,29 +12,29 @@ import pandas as pd
 ########################
 
 # Ordination method parameters
-Method = 'PCA' #Choose from 'PCA', 'CCA' and 'RDA
-subMed = 'sci' #Choose which package should be used when performing RDA. Enter 'eco' for EcoPy and 'sci' for scikit-bio.
+Method = 'CCA' # Choose from 'PCA', 'CCA' and 'RDA'
+subMed = 'sci' # Choose which package should be used when performing RDA. Enter 'eco' for EcoPy and 'sci' for scikit-bio.
 
 #Set verbose to True to get messages about the script status in the console when running the code.
 verbose = True
 
 # Input file parameters
-File_path = "*Fill in file path to Excel file here*" 
-Units = False #Set to true if the row beneath the column names contains units.
-Row_name = "well" #Put the name of the observation points here 
-Species_sheet = ["DNA field"] #List with names of the sheets containing the species (dependant) variables.
-Drop_species = ["aquifer"]  #List of names from the species variables to disregard for the analysis.
-Environment_sheet = ["environ_variables"] #List with names of the sheets containing the Environmental variables.
-Drop_Environment = [] #List of names from the Environmental variables to disregard for the analysis.
-Drop_row = [] #List of names of the observation points to disregard for the analysis. (Will be removed from both the Species and Environment)
-Set_Null = False #Ordination methods require all cells to be filled. Set to False to remove rows with missing values. Set to "average" to replace the missing values with the average of their corresponding variable. Set to "median" to replace the missing values with the median of their corresponding variable. Set to any numeric value to replace all empty cells with that value.
+File_path = "" # Put in the path to the data file. 
+Units = False # Set to true if the row beneath the column names contains units.
+Row_name = "" # Put the name of the observation points here 
+Species_sheet = [] # List with names of the sheets containing the species (dependant) variables.
+Drop_species = []  # List of names from the species variables to disregard for the analysis.
+Environment_sheet = [] # List with names of the sheets containing the Environmental variables.
+Drop_Environment = [] # List of names from the Environmental variables to disregard for the analysis.
+Drop_row = [] # List of names of the observation points to disregard for the analysis. (Will be removed from both the Species and Environment)
+Set_Null = False # Ordination methods require all cells to be filled. Set to False to remove rows with missing values. Set to "average" to replace the missing values with the average of their corresponding variable. Set to "median" to replace the missing values with the median of their corresponding variable. Set to any numeric value to replace all empty cells with that value.
 
 # Transform parameters
-Center = False #When set to true, centers the data; giving it an average of 0 
-Standardize = True #When set to true, centers data and divides by standard deviation
-LogScale_Species = False #Set to false to disable log transformation, set to True when wanting to log transform all data. Otherwise provide a list of all variable column names you want to transform
-LogScale_Environment = False
-#Log transform is in the form of log10(Ax + B). Below, provide the desired A and B
+Center = False # When set to true, centers the data; giving it an average of 0 
+Standardize = True # When set to true, centers data and divides by standard deviation
+LogScale_Species = False # Set to false to disable log transformation, set to True when wanting to log transform all Species data. Otherwise provide a list of all variable column names you want to transform
+LogScale_Environment = False # Same as line above, but for the environment variables
+# Log transform is in the form of log10(Ax + B). Below, provide the desired A and B
 LogScale_A = 1
 LogScale_B = 1
 
@@ -43,8 +43,18 @@ Plot_loadings = True # When set to True, the loadings will be plotted in the res
 Plot_scores = False # When set to True, the scores will be plotted in the resulting ordination plot.
 Full_extent = False # When set to True, the loadings and scores will be scaled to always have a loading close to 1. 
 Scale_focus = "Loadings" # Can be set to either 'Loadings', 'Scores' or 'none'. If either Loadings or Scores, the other will be scaled to the extent of the other. If none, no such scaling will take place.
-Figsize = [6, 7.5] # Sets the dimensions of the resulting plot
+
+# The plotting parameters below are optional to change plot lay-out to your liking. They do not influence the results of the ordination.
+Figsize = [4, 4.6] # Sets the dimensions of the resulting plot
 Adjust_text = True # When set to True, scores and loading labels will be adjusted to not overlap with eachother. This may increase the execution time of the code, especially when both Plot_scores and Plot_loadings are set to True.
+Subfigure = False # Is False by default. Can set to a string of a letter to include it in the top left corner of the figure.
+Axis_font = 12 # Font size of the axis titles
+Label_font = 12 # Font size of the axis labels
+Scoretext_font = 6 # Font size of the text displayed next to the site scores.
+Loadingtext_font = 8 # Font size of the text displayed next to the loadings.
+Arrow_width = 0.002 # Width of the vector tail 
+Arrowhead_width = 0.02 # Width of the vector head
+Arrowhead_length = 0.02 # length of the vector head
 # Code will adjust the plot axis extent automatically to the loadings and scores. Only set these parameters to a value if you want specific axis extents.
 Axis1_min = False # Forcibly sets the minimum value of the first ordiantion axis. Values between 0 and 1 recommended.
 Axis1_max = False # Forcibly sets the maximum value of the first ordiantion axis. Values between 0 and 1 recommended.
@@ -118,7 +128,6 @@ elif Method == "RDA" and subMed == "sci":
     results, names = ana.RDAsci(data = data, verbose = verbose)
 
 # Plotting the data 
-ana.plot(results = results, names = names, Method = Method, Plot_loadings = Plot_loadings, Plot_scores = Plot_scores, Adjust_text = Adjust_text, Full_extent = Full_extent, Scale_focus = Scale_focus, Axis1_min = Axis1_min , Axis1_max = Axis1_max, Axis2_min = Axis2_min, Axis2_max = Axis2_max, Figsize = Figsize, verbose = verbose)
+ana.plot(results = results, names = names, Method = Method, Plot_loadings = Plot_loadings, Plot_scores = Plot_scores, Adjust_text = Adjust_text, Full_extent = Full_extent, Scale_focus = Scale_focus, Figsize = Figsize, Subfigure = Subfigure, Axis_font = Axis_font, Label_font = Label_font, Scoretext_font = Scoretext_font, Loadingtext_font = Loadingtext_font, Arrow_width = Arrow_width, Arrowhead_width = Arrowhead_width, Arrowhead_length = Arrowhead_length, Axis1_min = Axis1_min , Axis1_max = Axis1_max, Axis2_min = Axis2_min, Axis2_max = Axis2_max, verbose = verbose)
 
 print("Done! :)")
-

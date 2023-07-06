@@ -8,11 +8,14 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
-import sklearn as skl
+from sklearn import cross_decomposition
+from sklearn import decomposition
 from adjustText import adjust_text
 import RDA_class_ecopy as rdaeco
 import pylab as lab
+#Uncomment the import statement below in the case installment of scikit-bio fails. Then download from https://github.com/JoYvBa/MiBiRem_OrdinationPlot the files in "Scikit_bio_modules" and put them in your working repository.
 #import scikitbio_RDA as sciRDA
+#Comment the import statement below in the case installment of scikit-bio fails.
 import skbio.stats.ordination as sciord
 import warnings
 
@@ -272,14 +275,14 @@ def PCA(data, Row_name, verbose = False):
     wells = list(Variables.index)
     
     # Checking if the dimensions of the dataframe allow for PCA
-    lenght, width = Variables.shape
-    if lenght < width:
+    length, width = Variables.shape
+    if length < width:
         raise Exception("There are more variables than there are samples. PCA is only possible when there are at least as much samples as there are variables.")
     
     if verbose: print("Performing PCA...")
     
     # Using scikit.decomposoition.PCA with an amount of components equal to the amount of variables, then getting the loadings, scores and explained variance ratio.
-    pca = skl.decomposition.PCA(n_components=len(Variables.columns)) 
+    pca = decomposition.PCA(n_components=len(Variables.columns)) 
     pca.fit(Variables)
     loadings = pca.components_.T
     PCAscores = pca.transform(Variables)
@@ -333,14 +336,14 @@ def CCA(data, verbose = False):
     wells = list(Species.index)
     
     # Checking if the dimensions of the dataframe allow for CCA
-    lenght_s, width_s = Species.shape
-    lenght_e, width_e = Environment.shape
-    if lenght_s < width_s or lenght_e < width_e:
+    length_s, width_s = Species.shape
+    length_e, width_e = Environment.shape
+    if length_s < width_s or length_e < width_e:
         raise Exception("There are more variables than there are samples. CCA is only possible when there are at least as much samples as there are Species or Environmental variables")
     
     if verbose: print("Performing CCA...")
     # Using skl.cross_decomposition.CCA to get the scores and loadings from CCA
-    cca = skl.cross_decomposition.CCA(n_components=2)
+    cca = cross_decomposition.CCA(n_components=2)
     cca.fit(Environment, Species)
     Environment_score, Species_score = cca.transform(Environment, Species)
     loadings_Environment = cca.x_loadings_
@@ -380,9 +383,9 @@ def RDAeco(data, verbose = False):
     wells = list(Species.index)
     
     # Checking if the dimensions of the dataframe allow for CCA
-    lenght_s, width_s = Species.shape
-    lenght_e, width_e = Environment.shape
-    if lenght_s < width_s or lenght_e < width_e:
+    length_s, width_s = Species.shape
+    length_e, width_e = Environment.shape
+    if length_s < width_s or length_e < width_e:
         raise Exception("There are more variables than there are samples. CCA is only possible when there are at least as much samples as there are Species or Environmental variables")
     
     if verbose: print("Performing RDA...")
@@ -431,14 +434,17 @@ def RDAsci(data, verbose = False):
     wells = list(Species.index)
     
     # Checking if the dimensions of the dataframe allow for CCA
-    lenght_s, width_s = Species.shape
-    lenght_e, width_e = Environment.shape
-    if lenght_s < width_s or lenght_e < width_e:
+    length_s, width_s = Species.shape
+    length_e, width_e = Environment.shape
+    if length_s < width_s or length_e < width_e:
         raise Exception("There are more variables than there are samples. CCA is only possible when there are at least as much samples as there are Species or Environmental variables")
     
     if verbose: print("Performing RDA...")
     # Performing RDA using the RDA function from scikit-bio.
+    
+    # Uncomment the line below in the case installment of scikit-bio fails. Then download from https://github.com/JoYvBa/MiBiRem_OrdinationPlot the files in "Scikit_bio_modules" and put them in your working repository. 
     # sci_rda = sciRDA.rda(Species, Environment, scaling = 2)
+    # Comment the line below in the case installment of scikit-bio fails and follow the other instructions for this scenario.
     sci_rda = sciord.rda(Species, Environment, scaling = 2)
     loadings_Species = sci_rda.features
     scores = sci_rda.samples
@@ -458,7 +464,7 @@ def RDAsci(data, verbose = False):
     
     return(results, names)
 
-def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adjust_text = False, Full_extent = False, Scale_focus = "Loadings", Axis1_min = False, Axis1_max = False, Axis2_min = False, Axis2_max = False, Figsize = False, verbose = False):
+def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adjust_text = False, Full_extent = False, Scale_focus = "Loadings", Figsize = False, Subfigure = False, Axis_font = 12, Label_font = 12, Scoretext_font = 6, Loadingtext_font = 8, Arrow_width = 0.002, Arrowhead_width = 0.02, Arrowhead_length = 0.02, Axis1_min = False, Axis1_max = False, Axis2_min = False, Axis2_max = False, verbose = False):
     '''
     Function that takes in ordination loadings and scores and plots them in an ordination plot.
 
@@ -480,6 +486,24 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
         When set to True, the loadings and scores will be scaled to always have a loading close to 1. The default is False.
     Scale_focus : String, optional
         Can be set to either 'Loadings', 'Scores' or 'none'. If either Loadings or Scores, the other will be scaled to the extent of the other. If none, no such scaling will take place. The default is "Loadings".
+    Figsize : List, optional
+        Sets the dimensions of the resulting plot. Input as a list, where the first value is the size in the horizontal direction and the second value the size in the vertical direciton. The default is False.
+    Subfigure : Boolean or string, optional
+        When set to false, nothing happens. When set to a string, the string will be put in the top-left of the figure. The default is False.
+    Axis_font : Integer, optional
+        Sets the font size of the axis titles. Default is 12.
+    Label_font : Integer, optional
+        Sets the font size of the axis labels. Default is 12.
+    Scoretext_font : Integer, optional
+        Sets the font size of the text displayed next to the site scores. Default is 6.
+    Loadingtext_font : Integer, optional
+        Sets the font size of the text displayed next to the loadings. Default is 8.
+    Arrow_width : Float, optional
+        Sets the width of the vector tail. Default is 0.002.
+    Arrowhead_width : Float, optional
+        Sets the width of the vector head. Default is 0.02.
+    Arrowhead_length : Float, optional
+        Sets the width of the vector head. Default is 0.02.
     Axis1_min : Boolean, Interger or Float, optional
         Forcibly sets the minimum value of the first ordiantion axis. Values between 0 and 1 recommended. The default is False.
     Axis1_max : Boolean, Interger or Float, optional
@@ -488,8 +512,6 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
         Forcibly sets the minimum value of the second ordiantion axis. Values between 0 and 1 recommended. The default is False.
     Axis2_max : Boolean, Interger or Float, optional
         Forcibly sets the maximum value of the second ordiantion axis. Values between 0 and 1 recommended. The default is False.
-    Figsize : List, optional
-        Sets the dimensions of the resulting plot. Input as a list, where the first value is the size in the horizontal direction and the second value the size in the vertical direciton. The default is False.
     verbose : Boolean, optional
         Set to True to get messages in the Console about the status of the run code. The default is False.
     
@@ -516,7 +538,8 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
 
     # Determing the largest values in the PCA scores.
     max_load = np.max(np.abs(loadings))
-    max_score = np.max(np.abs(scores))
+    if len(scores):
+        max_score = np.max(np.abs(scores))
     
     # To make sure scores and loadings are between -1 and 1, they are all scaled down when one of them falls out of thay range.
     if max_load >= 1 or Full_extent:
@@ -524,10 +547,11 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
     else:
         loadings_scaled = loadings
     
-    if max_score >= 1 or Full_extent:
-        scores_scaled = scores / (max_score * 1.05)
-    else:
-        scores_scaled = scores
+    if len(scores):
+        if max_score >= 1 or Full_extent:
+            scores_scaled = scores / (max_score * 1.05)
+        else:
+            scores_scaled = scores
     
     # When plotting both scores and loadings, scores or loadings are scaled depending on the extent of the other. Depends on the input of Scale_focus.
     if Plot_scores and Plot_loadings:
@@ -595,7 +619,7 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
         for i, (x, y) in enumerate(scores_scaled):
             plt.scatter(x, y, color='grey', facecolor='none', edgecolor='grey')
             # Plotting the name of the scores and storing it in a list for the purpose of adjusting the position later
-            tex = plt.text(x, y, wells[i], color='black', fontsize = 5)
+            tex = plt.text(x, y, wells[i], color='black', fontsize = Scoretext_font)
             texts.append(tex)
 
     # Plotting the ordination loadings by iterating over every coordinate in the loadings array, if the Plot_scores parameter is set to true.
@@ -604,26 +628,25 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
         for i, (x, y) in enumerate(loadings_scaled):
             # Plots Environmental and Species variables with different colours and text formatting.
             if heads[i] in Environment_head:
-                lab.arrow(0, 0, x, y, color='blue', head_length=0.015, head_width=0.015)
+                lab.arrow(0, 0, x, y, color='blue', width = Arrow_width, head_length = Arrowhead_length, head_width = Arrowhead_width)
                 #Plotting the name of the loading and storing it in a list for the purpose of adjusting the position later
-                tex = plt.text(x, y, heads[i], color='black', fontstyle='italic', fontsize = 9)
+                tex = plt.text(x, y, heads[i], color='black', fontstyle='italic', fontsize = Loadingtext_font)
             else:
-                lab.arrow(0, 0, x, y, color='red', head_length=0.015, head_width=0.015)
+                lab.arrow(0, 0, x, y, color='red', width = Arrow_width, head_length = Arrowhead_length, head_width = Arrowhead_width)
                 #Plotting the name of the loading and storing it in a list for the purpose of adjusting the position later
-                tex = plt.text(x, y, heads[i], color='black', weight="bold", fontsize = 9)
+                tex = plt.text(x, y, heads[i], color='black', weight="bold", fontsize = Loadingtext_font)
             texts.append(tex)
     
     # Plots the axis title with the percentage of variation explained if the method was PCA
     if Method == "PCA":
         percent_explained = results["percent_explained"]
-        plt.xlabel('PC1 (%s%%)' % percent_explained[0])
-        plt.ylabel('PC2 (%s%%)' % percent_explained[1])
+        plt.xlabel('PC1 (%s%%)' % percent_explained[0], fontsize = Axis_font)
+        plt.ylabel('PC2 (%s%%)' % percent_explained[1], fontsize = Axis_font)
     # Otherwise just plots a general axis title.
     else:
-        plt.xlabel('Ordination axis 1')
-        plt.ylabel('Ordination axis 2')
-        
-
+        plt.xlabel('Ordination axis 1', fontsize = Axis_font)
+        plt.ylabel('Ordination axis 2', fontsize = Axis_font)
+   
     # Changing the axis ticks and removing all but the first and last tick labels
     ax = plt.gca()
     x_ticks = np.around(ax.get_xticks(), decimals=1)
@@ -632,12 +655,13 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
     x_tick_labels = [str(x_ticks[0])] + [''] * (len(x_ticks) - 2) + [str(x_ticks[-1])]
     y_tick_labels = [str(y_ticks[0])] + [''] * (len(y_ticks) - 2) + [str(y_ticks[-1])]
 
-    ax.set_xticklabels(x_tick_labels)
-    ax.set_yticklabels(y_tick_labels)
+    ax.set_xticklabels(x_tick_labels, fontsize = Label_font)
+    ax.set_yticklabels(y_tick_labels, fontsize = Label_font)
+    if Subfigure:
+        plt.text(-0.175,1, Subfigure, transform = ax.transAxes, fontsize = 16)
     
     if Adjust_text:
         if verbose: print("Adjusting text position...")
         #adjust_text gives an irrelevant warning for the purpose of this scipt. The statement below will make sure that warning does not show up.
         warnings.filterwarnings("ignore")
         adjust_text(texts)
-
