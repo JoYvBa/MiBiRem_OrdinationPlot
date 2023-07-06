@@ -6,4 +6,4 @@ sklearn
 adjustText
 pylab
 scikit-bio
-warnings
+pytest-warnings
