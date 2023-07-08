@@ -11,8 +11,6 @@ import scipy.stats as stats
 from sklearn import cross_decomposition
 from sklearn import decomposition
 from adjustText import adjust_text
-import RDA_class_ecopy as rdaeco
-import pylab as lab
 #Uncomment the import statement below in the case installment of scikit-bio fails. Then download from https://github.com/JoYvBa/MiBiRem_OrdinationPlot the files in "Scikit_bio_modules" and put them in your working repository.
 #import scikitbio_RDA as sciRDA
 #Comment the import statement below in the case installment of scikit-bio fails.
@@ -27,14 +25,13 @@ null : Takes in dataframes and removes empty cells in the given manner.
 transform : Takes in a dataframe and transforms the data.
 PCA : Performs PCA on an input dataframe.
 CCA : Performs CCA on an input dataframe.
-RDAeco : Performs RDA on an input dataframe using the source code of the EcoPy package.
-RDAsci : Performs RDA on an input dataframe using scikit-bio package.
+RDA : Performs RDA on an input dataframe using scikit-bio package.
 plot : Plots scores and loadings from an ordination method.
 '''
 
-def reader(InputFile, Units, Select_sheet, Row_name, Drop_variable = [], verbose = False):
+def reader(InputFile, Units, Select_sheet, Row_name, Keep_variables, verbose = False):
     '''
-    Function that takes in a dataframe sourced from an Excel file following a specific format and removes columns/rows based on the input parameters
+    Function that takes in a dataframe sourced from an Excel file following a specific format and selects the desired columns/rows based on the input parameters
 
     Parameters
     ----------
@@ -46,8 +43,8 @@ def reader(InputFile, Units, Select_sheet, Row_name, Drop_variable = [], verbose
         A list containing which sheet name(s) should be used. Multiple entries in the list means those sheets will be merged together as one dataframe.
     Row_name : String
         The name of the observation column (column containing the different observation points). In the source Excel file, this should be put somewhere into the first row.
-    Drop_variable : List, optional
-        A list containing the names of the variables(columns) that should be removed from the dataframe. If none should be removed, leave it as its default; an empty list. The default is [].
+    Keep_variables : List
+        A list containing the names of the variables(columns) that should be used for the ordination.
     verbose : Boolean, optional
         Set to True to get messages in the Console about the status of the run code. The default is False.
 
@@ -61,11 +58,12 @@ def reader(InputFile, Units, Select_sheet, Row_name, Drop_variable = [], verbose
     # Checking the amount of sheets that need to be merged together. The values is used to evaluete how much sheets remain.
     len_sheets = len(Select_sheet)
     
+    #Checking if there are sheets named that are not contained in the input file. 
     ErrorName = [Sheet for Sheet in Select_sheet if Sheet not in InputFile]
     if ErrorName:
         raise Exception("It appears that the sheets %s are not contained in the given input file. Please make sure the right sheet names are entered." % ErrorName)
     
-    # Preparing the Species data
+    # Preparing the data
     if verbose: print("Preparing the Species data...")
     # If statement checking if sheets need to be merged (if there is more than 1 name in Select_sheet),
     if len_sheets > 1:
@@ -75,21 +73,27 @@ def reader(InputFile, Units, Select_sheet, Row_name, Drop_variable = [], verbose
                 InputFile[Select_sheet[i]] = InputFile[Select_sheet[i]].drop('1')
             InputFile[Select_sheet[i]] = InputFile[Select_sheet[i]].set_index(Row_name)
         # Merge the first two entries in the Select_sheet list together on their row names.
-        Variables = pd.merge(InputFile[Select_sheet[0]], InputFile[Select_sheet[1]], on = Row_name)
+        AllVariables = pd.merge(InputFile[Select_sheet[0]], InputFile[Select_sheet[1]], on = Row_name)
         # While there are still unmerged sheets remaining, take the next sheet name on the list and merge it to the dataframe.
         while len_sheets >= 3:
             i = 2
-            Variables = pd.merge(Variables, InputFile[Select_sheet[i]], on=Row_name)
+            AllVariables = pd.merge(AllVariables, InputFile[Select_sheet[i]], on=Row_name)
             i += 1
             len_sheets -= 1
     else:
         # WHen there is only one sheet, take that select sheet, drop the unit row if present and then set the observation colunn as row names.
         if Units:
             InputFile[Select_sheet[0]] = InputFile[Select_sheet[0]].drop('1')
-        Variables = InputFile[Select_sheet[0]].set_index(Row_name)
+        AllVariables = InputFile[Select_sheet[0]].set_index(Row_name)
     
-    # Drop all the variable names from the dataframe contained in the Drop_variable list.
-    Variables = Variables.drop(Drop_variable, axis = 1)
+    #Checking if there are variables named to use for ordination that are not contained in the selected sheet
+    ErrorVars = [Var for Var in Keep_variables if Var not in AllVariables]
+    if ErrorVars:
+        raise Exception("It appears that the variables %s are not contained in the given input sheets. Please make sure the right sheet and variable names are entered" % ErrorVars)
+    
+    # Select only the variables named in the Keep_variables list.
+    Variables = AllVariables[Keep_variables]
+    
     # Sort the dataframe on the row names.
     Variables = Variables.sort_index()
 
@@ -355,57 +359,7 @@ def CCA(data, verbose = False):
     
     return(results, names)
 
-def RDAeco(data, verbose = False):
-    '''
-    Function that performs Redundancy Analysis on the input data and gives the site scores and loadings using the source code of the RDA class of EcoPy.
-
-    Parameters
-    ----------
-    data : Dictionary
-        A dictionary containing the Species and Environment dataframes. The dataframes represents the data on which the CCA takes place.
-    verbose : Boolean, optional
-        Set to True to get messages in the Console about the status of the run code. The default is False.
-
-    Returns
-    -------
-    results : Dictionary
-        A dictionary containing the scores and loadings of the RDA. The Environment variables are positionned first, then the Species variables.
-    names : Dictionary
-        A dictionary containing the names of the samples and the Environmental and Species variables
-
-    '''
-    
-    Species = data["Species"]
-    Environment = data["Environment"]
-    Species_head = list(Species.columns.values)
-    Environment_head = list(Environment.columns.values)
-    heads = Environment_head + Species_head
-    wells = list(Species.index)
-    
-    # Checking if the dimensions of the dataframe allow for CCA
-    length_s, width_s = Species.shape
-    length_e, width_e = Environment.shape
-    if length_s < width_s or length_e < width_e:
-        raise Exception("There are more variables than there are samples. CCA is only possible when there are at least as much samples as there are Species or Environmental variables")
-    
-    if verbose: print("Performing RDA...")
-    # Using the eco_rda class to perform RDA on the data
-    eco_rda = rdaeco.rda(Species, Environment)
-    loadings_Species = eco_rda.spScores.to_numpy()
-    loadings_Environment = eco_rda.predScores.to_numpy()
-    loadings = np.append(loadings_Environment, loadings_Species, axis=0)
-    scores = eco_rda.siteScores.to_numpy()
-    
-    # Taking the first two ordinations axes.
-    loadings = loadings[:, [0,1]]
-    scores = scores[:, [0,1]]
-    
-    results = {"loadings": loadings, "scores": scores}
-    names = {"heads": heads, "Species_head": Species_head, "Environment_head": Environment_head, "wells": wells}
-    
-    return(results, names)
-
-def RDAsci(data, verbose = False):
+def RDA(data, verbose = False):
     '''
     Function that performs Redundancy Analysis using skbio.stats.ordination.RDA on the input data and gives the site scores and loadings.
 
@@ -628,11 +582,11 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
         for i, (x, y) in enumerate(loadings_scaled):
             # Plots Environmental and Species variables with different colours and text formatting.
             if heads[i] in Environment_head:
-                lab.arrow(0, 0, x, y, color='blue', width = Arrow_width, head_length = Arrowhead_length, head_width = Arrowhead_width)
+                plt.arrow(0, 0, x, y, color='blue', width = Arrow_width, head_length = Arrowhead_length, head_width = Arrowhead_width)
                 #Plotting the name of the loading and storing it in a list for the purpose of adjusting the position later
                 tex = plt.text(x, y, heads[i], color='black', fontstyle='italic', fontsize = Loadingtext_font)
             else:
-                lab.arrow(0, 0, x, y, color='red', width = Arrow_width, head_length = Arrowhead_length, head_width = Arrowhead_width)
+                plt.arrow(0, 0, x, y, color='red', width = Arrow_width, head_length = Arrowhead_length, head_width = Arrowhead_width)
                 #Plotting the name of the loading and storing it in a list for the purpose of adjusting the position later
                 tex = plt.text(x, y, heads[i], color='black', weight="bold", fontsize = Loadingtext_font)
             texts.append(tex)
