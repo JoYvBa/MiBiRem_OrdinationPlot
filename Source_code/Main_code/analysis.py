@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as stats
-from sklearn import cross_decomposition
 from sklearn import decomposition
 from adjustText import adjust_text
 #Uncomment the import statement below in the case installment of scikit-bio fails. Then download from https://github.com/JoYvBa/MiBiRem_OrdinationPlot the files in "Scikit_bio_modules" and put them in your working repository.
@@ -23,8 +22,8 @@ Python module that contains functions for the purpose of performing ordination m
 reader : Takes a collection of dataframes and extracts the data for analysis.
 null : Takes in dataframes and removes empty cells in the given manner.
 transform : Takes in a dataframe and transforms the data.
-PCA : Performs PCA on an input dataframe.
-CCA : Performs CCA on an input dataframe.
+PCA : Performs PCA on an input dataframe using scikit-learn package.
+CCA : Performs CCA on an input dataframe using scikit-bio package.
 RDA : Performs RDA on an input dataframe using scikit-bio package.
 plot : Plots scores and loadings from an ordination method.
 '''
@@ -314,7 +313,7 @@ def PCA(data, Row_name, verbose = False):
 
 def CCA(data, verbose = False):
     '''
-    Function that performs Canonical Correspondence Analysis using sklearn.decomposition.CCA on the input data and gives the site scores and loadings.
+    Function that performs Canonical Correspondence Analysis using skbio.stats.ordination.CCA on the input data and gives the site scores and loadings.
 
     Parameters
     ----------
@@ -326,7 +325,7 @@ def CCA(data, verbose = False):
     Returns
     -------
     results : Dictionary
-        A dictionary containing the scores and loadings of the CCA. The Environment variables are positionned first, then the Species variables.
+        A dictionary containing the scores and loadings of the RDA. The Environment variables are positionned first, then the Species variables.
     names : Dictionary
         A dictionary containing the names of the samples and the Environmental and Species variables
 
@@ -346,15 +345,22 @@ def CCA(data, verbose = False):
         raise Exception("There are more variables than there are samples. CCA is only possible when there are at least as much samples as there are Species or Environmental variables")
     
     if verbose: print("Performing CCA...")
-    # Using skl.cross_decomposition.CCA to get the scores and loadings from CCA
-    cca = cross_decomposition.CCA(n_components=2)
-    cca.fit(Environment, Species)
-    Environment_score, Species_score = cca.transform(Environment, Species)
-    loadings_Environment = cca.x_loadings_
-    loadings_Species = cca.y_loadings_
-    loadings = np.append(loadings_Environment, loadings_Species, axis=0)
+    # Performing CCA using the CCA function from scikit-bio.
+    sci_cca = sciord.cca(Species, Environment, scaling = 2)
+    loadings_Species = sci_cca.features
+    scores = sci_cca.samples
+    loadings_Environment = sci_cca.biplot_scores
     
-    results = {"loadings": loadings, "scores": Species_score}
+    # Transforming the loadings and scores to arrays and taking the first two canonical axes.
+    loadings_Species = loadings_Species.to_numpy()
+    loadings_Environment = loadings_Environment.to_numpy()
+    loadings_Species = loadings_Species[:, [0,1]]
+    loadings_Environment = loadings_Environment[:, [0,1]]
+    loadings = np.append(loadings_Environment, loadings_Species, axis=0)
+    scores = scores.to_numpy()
+    scores = scores[:, [0,1]]
+    
+    results = {"loadings": loadings, "scores": scores}
     names = {"heads": heads, "Species_head": Species_head, "Environment_head": Environment_head, "wells": wells}
     
     return(results, names)
@@ -592,7 +598,7 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
             texts.append(tex)
     
     # Plots the axis title with the percentage of variation explained if the method was PCA
-    if Method == "PCA":
+    if Method == "PCA" and len(results) > 2:
         percent_explained = results["percent_explained"]
         plt.xlabel('PC1 (%s%%)' % percent_explained[0], fontsize = Axis_font)
         plt.ylabel('PC2 (%s%%)' % percent_explained[1], fontsize = Axis_font)
