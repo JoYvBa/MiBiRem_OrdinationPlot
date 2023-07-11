@@ -10,7 +10,9 @@ import matplotlib.pyplot as plt
 import scipy.stats as stats
 from sklearn import decomposition
 from adjustText import adjust_text
-import skbio.stats.ordination as sciord
+import sys
+sys.path.append('../Scikit_bio_modules')
+import scikitbio_CCA_RDA as bio
 import warnings
 
 '''
@@ -20,8 +22,8 @@ reader : Takes a collection of dataframes and extracts the data for analysis.
 null : Takes in dataframes and removes empty cells in the given manner.
 transform : Takes in a dataframe and transforms the data.
 PCA : Performs PCA on an input dataframe using scikit-learn package.
-CCA : Performs CCA on an input dataframe using scikit-bio package.
-RDA : Performs RDA on an input dataframe using scikit-bio package.
+CCA : Performs CCA on an input dataframe using scikit-bio CCA module files
+RDA : Performs RDA on an input dataframe using scikit-bio RDA module files
 plot : Plots scores and loadings from an ordination method.
 '''
 
@@ -314,7 +316,7 @@ def CCA(data, verbose = False):
 
     Parameters
     ----------
-    data : Dictionary
+    data : Dictionar
         A dictionary containing the Species and Environment dataframes. The dataframes represents the data on which the CCA takes place.
     verbose : Boolean, optional
         Set to True to get messages in the Console about the status of the run code. The default is False.
@@ -343,7 +345,7 @@ def CCA(data, verbose = False):
     
     if verbose: print("Performing CCA...")
     # Performing CCA using the CCA function from scikit-bio.
-    sci_cca = sciord.cca(Species, Environment, scaling = 2)
+    sci_cca = bio.cca(Species, Environment, scaling = 2)
     loadings_Species = sci_cca.features
     scores = sci_cca.samples
     loadings_Environment = sci_cca.biplot_scores
@@ -398,7 +400,8 @@ def RDA(data, verbose = False):
     
     if verbose: print("Performing RDA...")
     # Performing RDA using the RDA function from scikit-bio.
-    sci_rda = sciord.rda(Species, Environment, scaling = 2)
+    
+    sci_rda = bio.rda(Species, Environment, scaling = 2)
     loadings_Species = sci_rda.features
     scores = sci_rda.samples
     loadings_Environment = sci_rda.biplot_scores
@@ -611,8 +614,8 @@ def plot(results, names, Method, Plot_loadings = True, Plot_scores = False, Adju
     ax.set_xticklabels(x_tick_labels, fontsize = Label_font)
     ax.set_yticklabels(y_tick_labels, fontsize = Label_font)
     if Subfigure:
-        plt.text(-0.175,1, Subfigure, transform = ax.transAxes, fontsize = 24)
-
+        plt.text(-0.175,1, Subfigure, transform = ax.transAxes, fontsize = 16)
+    
     if Adjust_text:
         if verbose: print("Adjusting text position...")
         #adjust_text gives an irrelevant warning for the purpose of this scipt. The statement below will make sure that warning does not show up.
