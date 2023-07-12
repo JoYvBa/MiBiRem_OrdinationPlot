@@ -172,7 +172,6 @@ def null(data, Drop_row = [], Set_Null = False, verbose = False):
                 Species = Species.drop(Nan_rows)
             if isinstance(Environment, pd.DataFrame):
                 Environment = Environment.drop(Nan_rows)
-                print('Environment has also been removed')
             print('The rows with the names %s have been removed since they contain NULL cells.' % Nan_rows)
     
     data = {'Species': Species, 'Environment': Environment}
